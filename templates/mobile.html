@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="XAU Signals">
+<meta name="theme-color" content="#0a0c10">
+<link rel="manifest" href="/manifest.json">
+<title>XAU Signals</title>
+<style>
+:root{
+  --bg:#0a0c10;--bg2:#111520;--bg3:#161b27;--bg4:#1c2233;
+  --border:#1e2a3a;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --gold:#f59e0b;--bull:#10b981;--bear:#ef4444;
+  --info:#3b82f6;--warn:#f59e0b;--sniper:#a855f7;
+  --bull-bg:rgba(16,185,129,.12);--bear-bg:rgba(239,68,68,.12);
+  --gold-bg:rgba(245,158,11,.10);--info-bg:rgba(59,130,246,.10);
+  --sniper-bg:rgba(168,85,247,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh;padding-bottom:80px}
+/* ── TOP BAR ── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:16px;font-weight:700;color:var(--gold);letter-spacing:1px}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:1px}
+.price-block{text-align:center}
+.price-big{font-size:22px;font-weight:700;color:var(--gold);font-family:monospace}
+.price-small{font-size:10px;color:var(--text3);margin-top:1px}
+.live-pill{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:4px 10px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--text3)}
+.live-dot.on{background:var(--bull);box-shadow:0 0 6px var(--bull);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.live-txt{font-size:10px;color:var(--text2)}
+/* ── STATUS STRIP ── */
+.strip{background:var(--bg3);border-bottom:1px solid var(--border);padding:6px 16px;display:flex;gap:16px;overflow-x:auto;white-space:nowrap}
+.strip::-webkit-scrollbar{display:none}
+.strip-item{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.strip-label{font-size:9px;color:var(--text3);letter-spacing:.8px;text-transform:uppercase}
+.strip-val{font-size:12px;font-weight:600;font-family:monospace}
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:10px;gap:3px;transition:color .15s}
+.nav-btn.active{color:var(--gold)}
+.nav-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* ── PAGES ── */
+.page{display:none;padding:12px 12px 0}.page.active{display:block}
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.card-title{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:10px}
+/* ── SIGNAL CARD ── */
+.sig-card{background:var(--bg2);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.sig-header{padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+.sig-dir-box{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:.5px;flex-shrink:0}
+.dir-buy{background:rgba(16,185,129,.15);color:var(--bull);border:1px solid rgba(16,185,129,.4)}
+.dir-sell{background:rgba(239,68,68,.15);color:var(--bear);border:1px solid rgba(239,68,68,.4)}
+.sig-title-text{font-size:15px;font-weight:700}
+.sig-subtitle{font-size:11px;color:var(--text3);margin-top:2px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.badge-sniper{background:var(--sniper-bg);color:var(--sniper);border:1px solid rgba(168,85,247,.3)}
+.badge-high{background:var(--bull-bg);color:var(--bull);border:1px solid rgba(16,185,129,.3)}
+.badge-medium{background:var(--info-bg);color:var(--info);border:1px solid rgba(59,130,246,.3)}
+.badge-low{background:rgba(100,116,139,.1);color:var(--text3);border:1px solid var(--border)}
+.badge-aggressive{background:var(--bear-bg);color:var(--bear);border:1px solid rgba(239,68,68,.3)}
+.badge-conf{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+/* ── LEVEL GRID ── */
+.levels-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 14px}
+.lvl-box{background:var(--bg3);border-radius:8px;padding:10px 12px;border:1px solid var(--border)}
+.lvl-box.entry{border-color:rgba(245,158,11,.4)}.lvl-box.sl{border-color:rgba(239,68,68,.4)}.lvl-box.tp{border-color:rgba(16,185,129,.3)}
+.lvl-label{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.lvl-price{font-size:17px;font-weight:700;font-family:monospace}
+.lvl-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.entry .lvl-price{color:var(--gold)}.sl .lvl-price{color:var(--bear)}.tp .lvl-price{color:var(--bull)}
+/* ── METRICS ROW ── */
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 14px 10px}
+.met-box{background:var(--bg3);border-radius:8px;padding:8px;text-align:center}
+.met-label{font-size:9px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
+.met-val{font-size:14px;font-weight:700;font-family:monospace;margin-top:2px}
+/* ── REASONS ── */
+.reasons{background:var(--bg3);border-left:3px solid var(--border);padding:10px 14px;margin:0 14px 14px;border-radius:0 8px 8px 0}
+.reasons-title{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.reason-item{display:flex;gap:6px;padding:2px 0;font-size:12px;color:var(--text2)}
+.reason-dot{width:4px;height:4px;border-radius:50%;background:var(--gold);margin-top:6px;flex-shrink:0}
+/* ── INFO ROWS ── */
+.info-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--text3)}.info-val{font-weight:600;font-family:monospace}
+.bull-v{color:var(--bull)}.bear-v{color:var(--bear)}.gold-v{color:var(--gold)}.neut-v{color:var(--text2)}.warn-v{color:var(--warn)}
+/* ── IND TABS ── */
+.tab-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+.tab-row::-webkit-scrollbar{display:none}
+.tab-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.tab-btn.active{background:var(--gold-bg);border-color:var(--gold);color:var(--gold)}
+/* ── BAR ── */
+.bar-track{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-top:5px}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s}
+/* ── SMC ITEMS ── */
+.smc-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.smc-item:last-child{border-bottom:none}
+.smc-lbl{color:var(--text2);flex:1}.smc-val{color:var(--gold);font-family:monospace;font-size:11px}
+.bull-item .smc-lbl{color:var(--bull)}.bear-item .smc-lbl{color:var(--bear)}.sweep-item .smc-lbl{color:var(--sniper)}
+/* ── NOTIFY SECTION ── */
+.notify-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.notify-title{font-size:13px;font-weight:600;margin-bottom:6px}
+.notify-sub{font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+.notify-btn{width:100%;padding:12px;background:var(--gold-bg);border:1px solid var(--gold);color:var(--gold);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.5px;margin-bottom:8px}
+.notify-btn:active{background:var(--gold);color:#000}
+.notify-btn.enabled{background:var(--bull-bg);border-color:var(--bull);color:var(--bull)}
+.url-box{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--gold);font-family:monospace;word-break:break-all;margin-bottom:8px;cursor:pointer}
+.copy-btn{width:100%;padding:10px;background:var(--info-bg);border:1px solid var(--info);color:var(--info);border-radius:8px;cursor:pointer;font-size:12px;font-weight:600}
+.step-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.step-row:last-child{border-bottom:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--gold-bg);border:1px solid var(--gold);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.step-text{font-size:12px;color:var(--text2);line-height:1.5;padding-top:3px}
+.step-text strong{color:var(--text)}
+/* ── REFRESH FLOATING BTN ── */
+.fab{position:fixed;bottom:76px;right:16px;width:50px;height:50px;border-radius:50%;background:var(--gold);color:#000;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(245,158,11,.4);z-index:99;transition:transform .1s}
+.fab:active{transform:scale(.9)}
+.fab.spin{animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── MISC ── */
+.section-title{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin:14px 0 8px}
+.no-sig{text-align:center;padding:30px 20px;color:var(--text3)}
+.no-sig-title{font-size:14px;color:var(--text2);margin-bottom:6px;font-weight:600}
+.news-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.news-row:last-child{border-bottom:none}
+.news-imp{padding:2px 7px;border-radius:3px;font-size:9px;font-weight:700}
+.imp-high{background:rgba(239,68,68,.15);color:var(--bear)}.imp-med{background:rgba(245,158,11,.1);color:var(--warn)}
+.news-txt{flex:1;font-size:12px;color:var(--text2)}.news-time{font-size:10px;color:var(--text3)}
+.warn-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--bear);margin-bottom:10px}
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:12px;color:var(--text);z-index:999;display:none}
+.toast.show{display:block;animation:fadeIn .2s}
+@keyframes fadeIn{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translateX(-50%)}}
+.htf-locked-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:6px;font-size:11px;font-weight:600;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.countdown-ring{font-size:10px;color:var(--text3);font-family:monospace}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="logo">⚡ XAU SIGNALS</div>
+    <div class="logo-sub">SMC · ICT · MT5</div>
+  </div>
+  <div class="price-block">
+    <div class="price-big" id="m-price">—</div>
+    <div class="price-small" id="m-time">—</div>
+  </div>
+  <div class="live-pill">
+    <div class="live-dot" id="m-dot"></div>
+    <span class="live-txt" id="m-status">—</span>
+  </div>
+</div>
+
+<!-- HTF LOCK BAR -->
+<div class="htf-locked-bar" id="htf-bar">
+  <span id="htf-bar-text" style="color:var(--text3)">Loading bias...</span>
+  <span class="countdown-ring" id="m-countdown">60s</span>
+</div>
+
+<!-- STRIP -->
+<div class="strip">
+  <div class="strip-item"><div class="strip-label">Phase</div><div class="strip-val" id="s-phase" style="color:var(--text2)">—</div></div>
+  <div class="strip-item"><div class="strip-label">Session</div><div class="strip-val" id="s-session" style="color:var(--text2)">—</div></div>
+  <div class="strip-item"><div class="strip-label">Asia</div><div class="strip-val" id="s-asia" style="color:var(--text3)">—</div></div>
+  <div class="strip-item"><div class="strip-label">Flip Guard</div><div class="strip-val" id="s-flip" style="color:var(--text2)">—</div></div>
+  <div class="strip-item"><div class="strip-label">Signals</div><div class="strip-val" id="s-count" style="color:var(--gold)">—</div></div>
+  <div class="strip-item"><div class="strip-label">Source</div><div class="strip-val" id="s-source" style="color:var(--text2)">—</div></div>
+</div>
+
+<!-- PAGES -->
+
+<!-- PAGE: SIGNALS -->
+<div class="page active" id="page-signals">
+  <div style="margin-top:12px" id="signals-list">
+    <div class="no-sig"><div class="no-sig-title">Loading...</div><div>Tap ↻ to fetch live data</div></div>
+  </div>
+</div>
+
+<!-- PAGE: ANALYSIS -->
+<div class="page" id="page-analysis">
+  <div class="tab-row" id="tf-tab-row">
+    <button class="tab-btn active" data-tf="1m">1M</button>
+    <button class="tab-btn" data-tf="5m">5M</button>
+    <button class="tab-btn" data-tf="15m">15M</button>
+    <button class="tab-btn" data-tf="1h">1H</button>
+    <button class="tab-btn" data-tf="4h">4H</button>
+  </div>
+  <div id="analysis-content">
+    <div class="no-sig">Loading analysis...</div>
+  </div>
+</div>
+
+<!-- PAGE: SMC -->
+<div class="page" id="page-smc">
+  <div class="tab-row" id="smc-tab-row">
+    <button class="tab-btn active" data-stf="1m">1M</button>
+    <button class="tab-btn" data-stf="5m">5M</button>
+    <button class="tab-btn" data-stf="15m">15M</button>
+  </div>
+  <div id="smc-content">
+    <div class="no-sig">Loading SMC data...</div>
+  </div>
+</div>
+
+<!-- PAGE: ALERTS -->
+<div class="page" id="page-alerts">
+  <div class="notify-card">
+    <div class="notify-title">🔔 Push Notifications</div>
+    <div class="notify-sub">Get notified instantly when a SNIPER or HIGH signal fires — even when your phone screen is off.</div>
+    <button class="notify-btn" id="notif-btn">Enable Notifications</button>
+    <div style="font-size:11px;color:var(--text3)">Works as a browser notification on Android. On iPhone: add to Home Screen first (see below).</div>
+  </div>
+  <div class="notify-card">
+    <div class="notify-title">📱 Add to Home Screen (iPhone)</div>
+    <div class="notify-sub">Install this as an app on your iPhone — no App Store needed:</div>
+    <div class="step-row"><div class="step-num">1</div><div class="step-text">Open this page in <strong>Safari</strong> (must be Safari, not Chrome)</div></div>
+    <div class="step-row"><div class="step-num">2</div><div class="step-text">Tap the <strong>Share button</strong> (box with arrow) at the bottom</div></div>
+    <div class="step-row"><div class="step-num">3</div><div class="step-text">Scroll down and tap <strong>"Add to Home Screen"</strong></div></div>
+    <div class="step-row"><div class="step-num">4</div><div class="step-text">Tap <strong>Add</strong> — the XAU icon appears on your home screen</div></div>
+    <div class="step-row"><div class="step-num">5</div><div class="step-text">Open from home screen — it runs in fullscreen like a native app</div></div>
+  </div>
+  <div class="notify-card">
+    <div class="notify-title">📱 Add to Home Screen (Android)</div>
+    <div class="notify-sub">Install as a PWA (Progressive Web App):</div>
+    <div class="step-row"><div class="step-num">1</div><div class="step-text">Open this page in <strong>Chrome</strong></div></div>
+    <div class="step-row"><div class="step-num">2</div><div class="step-text">Tap the <strong>3-dot menu</strong> (⋮) in top-right corner</div></div>
+    <div class="step-row"><div class="step-num">3</div><div class="step-text">Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong></div></div>
+    <div class="step-row"><div class="step-num">4</div><div class="step-text">Tap <strong>Install</strong> — opens like a native app from now on</div></div>
+  </div>
+  <div class="notify-card">
+    <div class="notify-title">🌐 Access from Anywhere (Ngrok)</div>
+    <div class="notify-sub">Access your signal server from any network (mobile data, different WiFi) without a VPS:</div>
+    <div class="step-row"><div class="step-num">1</div><div class="step-text">On your laptop: <strong>python app.py</strong></div></div>
+    <div class="step-row"><div class="step-num">2</div><div class="step-text">Open a 2nd terminal: <strong>ngrok http 5000</strong></div></div>
+    <div class="step-row"><div class="step-num">3</div><div class="step-text">Copy the <strong>https://xxxx.ngrok-free.app</strong> URL</div></div>
+    <div class="step-row"><div class="step-num">4</div><div class="step-text">Open that URL on your phone — works on any network worldwide</div></div>
+  </div>
+</div>
+
+<!-- PAGE: SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="card">
+    <div class="card-title">Server Connection</div>
+    <div class="info-row"><span class="info-label">Server URL</span><span class="info-val gold-v" id="set-server-url" style="font-size:11px">—</span></div>
+    <div class="info-row"><span class="info-label">MT5 status</span><span class="info-val" id="set-mt5">—</span></div>
+    <div class="info-row"><span class="info-label">Broker</span><span class="info-val neut-v" id="set-broker">—</span></div>
+    <div class="info-row"><span class="info-label">Spread</span><span class="info-val gold-v" id="set-spread">—</span></div>
+    <div class="info-row"><span class="info-label">Bid / Ask</span><span class="info-val neut-v" id="set-bidask">—</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Account</div>
+    <div class="info-row">
+      <span class="info-label">Balance ($)</span>
+      <input type="number" id="m-balance" value="1000" min="100" step="100"
+        style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:13px;font-family:monospace;width:110px;text-align:right">
+    </div>
+    <div class="info-row"><span class="info-label">Auto refresh</span><span class="info-val bull-v">Every 60s</span></div>
+    <div class="info-row"><span class="info-label">Flip protection</span><span class="info-val bull-v">5 cycles</span></div>
+    <div class="info-row"><span class="info-label">HTF lock</span><span class="info-val bull-v">2 confirms</span></div>
+  </div>
+  <div class="card" id="news-card">
+    <div class="card-title">Economic Events</div>
+    <div id="m-news"><div style="color:var(--text3);font-size:12px">Loading...</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Quick Access URL</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Share this URL to open on any device on your WiFi network:</div>
+    <div class="url-box" id="share-url" onclick="copyURL()">Tap to copy URL</div>
+    <button class="copy-btn" id="copy-url-btn">📋 Copy URL</button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" data-page="signals">
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Signals
+  </button>
+  <button class="nav-btn" data-page="analysis">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Analysis
+  </button>
+  <button class="nav-btn" data-page="smc">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    SMC
+  </button>
+  <button class="nav-btn" data-page="alerts">
+    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    Alerts
+  </button>
+  <button class="nav-btn" data-page="settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M20 12h2M2 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+    Settings
+  </button>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab">↻</button>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let allData   = null;
+let activeTF  = "1m";
+let smcTF     = "1m";
+let countdown = 60;
+let cdTimer   = null;
+let notifEnabled = false;
+const SERVER  = window.location.origin; // auto-detects any URL
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+document.querySelectorAll(".nav-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("page-" + btn.dataset.page).classList.add("active");
+  });
+});
+
+// ── TF Tabs (Analysis) ────────────────────────────────────────────────────────
+document.querySelectorAll("#tf-tab-row .tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#tf-tab-row .tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeTF = btn.dataset.tf;
+    if (allData) renderAnalysis(allData.analysis || {}, activeTF);
+  });
+});
+
+// ── TF Tabs (SMC) ─────────────────────────────────────────────────────────────
+document.querySelectorAll("#smc-tab-row .tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#smc-tab-row .tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    smcTF = btn.dataset.stf;
+    if (allData) renderSMC(allData.analysis || {}, smcTF);
+  });
+});
+
+// ── Fetch ─────────────────────────────────────────────────────────────────────
+function refresh() {
+  const fab = document.getElementById("fab");
+  fab.classList.add("spin");
+  document.getElementById("m-status").textContent = "Updating";
+  fetch(SERVER + "/api/refresh")
+    .then(r => r.json())
+    .then(data => {
+      allData = data;
+      renderAll(data);
+      fab.classList.remove("spin");
+      countdown = 60;
+      checkNotify(data);
+    })
+    .catch(e => { fab.classList.remove("spin"); toast("Server offline: " + e.message); });
+}
+
+function autoFetch() {
+  fetch(SERVER + "/api/analysis")
+    .then(r => r.json())
+    .then(data => { if (data.status !== "error") { allData = data; renderAll(data); checkNotify(data); } })
+    .catch(() => {});
+}
+
+// ── Render All ────────────────────────────────────────────────────────────────
+function renderAll(data) {
+  if (!data || data.status === "error") return;
+  const analysis = data.analysis || {};
+  const signals  = data.signals  || {};
+  const summary  = signals.summary || {};
+  const price    = data.price || 0;
+  const ts       = data.timestamp || "";
+
+  document.getElementById("m-price").textContent  = price > 0 ? "$" + price.toFixed(2) : "—";
+  document.getElementById("m-time").textContent   = ts ? ts.split(" ")[1] : "—";
+  document.getElementById("m-dot").classList.add("on");
+  document.getElementById("m-status").textContent = "Live";
+
+  // HTF bar
+  const htf = summary.htf_bias || "neutral";
+  const htfEl = document.getElementById("htf-bar-text");
+  htfEl.textContent = "HTF: " + htf.replace(/_/g," ").toUpperCase() + "  |  LOCKED";
+  htfEl.style.color = htf.includes("bull") ? "var(--bull)" : htf.includes("bear") ? "var(--bear)" : "var(--text3)";
+
+  // Strip
+  const phase   = summary.market_phase || "—";
+  const phaseColors = {retracement:"var(--bull)",distribution:"var(--info)",manipulation:"var(--sniper)",accumulation:"var(--text3)"};
+  setStrip("s-phase",   phase.toUpperCase(),          phaseColors[phase] || "var(--text2)");
+  const _mBD={"London":"2PM-6PM","New York":"7:30PM-2AM","London/NY Overlap":"6PM-7:30PM","Tokyo/Early Asia":"12AM-7AM⭐","Asian":"7AM-2PM","Off-hours":"4AM-6AM"};
+  const _mSess = (summary.session||"—");
+  setStrip("s-session", _mSess + (_mBD[_mSess]?" "+_mBD[_mSess]+" BD":""), summary.session==="Asian"||summary.session==="Tokyo/Early Asia" ? "var(--warn)" : summary.in_killzone ? "var(--bull)" : "var(--text3)");
+  setStrip("s-asia", summary.asia_session ? "Active ⚠" : "Inactive", summary.asia_session ? "var(--warn)" : "var(--text3)");
+  setStrip("s-flip",    summary.flip_protection > 0 ? "ACTIVE" : "STABLE", summary.flip_protection > 0 ? "var(--warn)" : "var(--bull)");
+  setStrip("s-count",   (signals.signals||[]).length + " found", "var(--gold)");
+  setStrip("s-source",  data.data_source || "—",     data.data_source === "MT5" ? "var(--bull)" : data.data_source === "Yahoo" ? "var(--warn)" : "var(--bear)");
+
+  // Render pages
+  renderSignals(signals, summary);
+  renderAnalysis(analysis, activeTF);
+  renderSMC(analysis, smcTF);
+  renderSettings(data);
+  renderNews(analysis.news || [], summary);
+
+  // Share URL
+  const url = window.location.href.split("?")[0];
+  document.getElementById("share-url").textContent = url;
+  document.getElementById("set-server-url").textContent = url;
+}
+
+function setStrip(id, val, color) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = val; el.style.color = color || "var(--text2)"; }
+}
+
+// ── Signals ───────────────────────────────────────────────────────────────────
+function renderSignals(signalData, summary) {
+  const sigs = signalData.signals || [];
+  const el   = document.getElementById("signals-list");
+  if (!sigs.length) {
+    const s2 = summary||{};
+    const reason = s2.no_signal_reason ||
+                 (s2.news_blocked ? "HIGH NEWS: "+(s2.news_reason||"")
+                 : !s2.in_killzone ? "Off-hours (4AM–6AM BD) — resumes 6AM BD"
+                 : s2.htf_bias === "neutral" ? "HTF neutral — 4H & 1H disagree. Wait for lock."
+                 : "Waiting: OB + FVG + Sweep + BOS confluence needed");
+    el.innerHTML = `<div class="no-sig"><div class="no-sig-title">No valid setups</div><div>${reason}</div></div>`;
+    return;
+  }
+  el.innerHTML = sigs.map(s => buildSigCard(s)).join("");
+}
+
+function buildSigCard(s) {
+  const dirCls   = s.direction === "BUY" ? "dir-buy" : "dir-sell";
+  const badgeCls = "badge-" + (s.setup_type||"medium");
+  const border   = s.setup_type === "sniper" ? "rgba(168,85,247,.4)" : s.direction === "BUY" ? "rgba(16,185,129,.3)" : "rgba(239,68,68,.3)";
+  const phaseC   = {retracement:"var(--bull)",distribution:"var(--info)",manipulation:"var(--sniper)"};
+  const confC    = s.confidence >= 80 ? "var(--bull)" : s.confidence >= 65 ? "var(--gold)" : "var(--text2)";
+  const confluence = s.confluence || s.reasons || [];
+  const newsWarn = s.news_warning ? `<div class="warn-box">${s.news_warning}</div>` : "";
+
+  return `<div class="sig-card" style="border:1px solid ${border}">
+    <div class="sig-header">
+      <div class="sig-dir-box ${dirCls}">${s.direction}</div>
+      <div style="flex:1;padding-left:12px">
+        <div class="sig-title-text" style="color:${s.direction==="BUY"?"var(--bull)":"var(--bear)"}">${s.direction} · XAUUSD · ${(s.timeframe||"").toUpperCase()}</div>
+        <div class="sig-subtitle">Score ${s.score}/10 · Phase: ${(s.market_phase||"—").toUpperCase()} · ${s.timestamp||""}</div>
+        <div class="badges">
+          <span class="badge ${badgeCls}">${(s.setup_type||"").toUpperCase()}</span>
+          <span class="badge badge-conf" style="color:${confC}">${s.confidence}%</span>
+          <span class="badge badge-conf">${s.confluence_count||0} factors</span>
+        </div>
+      </div>
+    </div>
+    ${newsWarn}
+    <div class="levels-grid">
+      <div class="lvl-box entry"><div class="lvl-label">Entry</div><div class="lvl-price">$${s.entry}</div><div class="lvl-sub">${s.entry_zone||""}</div></div>
+      <div class="lvl-box sl"><div class="lvl-label">Stop Loss</div><div class="lvl-price">$${s.sl}</div><div class="lvl-sub">${s.sl_pips}p · $${s.risk_usd}</div></div>
+      <div class="lvl-box tp"><div class="lvl-label">TP1 · 1:${s.rr1}</div><div class="lvl-price">$${s.tp1}</div><div class="lvl-sub">${s.rr_label||""}</div></div>
+      <div class="lvl-box tp"><div class="lvl-label">TP2 · 1:${s.rr2}</div><div class="lvl-price">$${s.tp2}</div><div class="lvl-sub">${(s.tp_details&&s.tp_details[1])?s.tp_details[1].source:'Structure'}</div></div>
+      <div class="lvl-box tp" style="grid-column:span 2"><div class="lvl-label">TP3 · 1:${s.rr3}</div><div class="lvl-price">$${s.tp3}</div><div class="lvl-sub">Extended target</div></div>
+    </div>
+    <div class="metrics-row">
+      <div class="met-box"><div class="met-label">Lot</div><div class="met-val" style="color:var(--gold)">${s.lot_size}</div></div>
+      <div class="met-box"><div class="met-label">Risk%</div><div class="met-val" style="color:var(--warn)">${s.risk_pct}%</div></div>
+      <div class="met-box"><div class="met-label">RSI</div><div class="met-val" style="color:${(s.indicators?.rsi||50)>70?"var(--bear)":(s.indicators?.rsi||50)<30?"var(--bull)":"var(--text2)"}">${(s.indicators?.rsi||0).toFixed(0)}</div></div>
+    </div>
+    <div class="reasons">
+      <div class="reasons-title">TP Structure Analysis</div>
+      ${(s.tp_details&&s.tp_details.length) ? s.tp_details.map(t=>`<div class="reason-item"><div class="reason-dot" style="background:var(--bull)"></div><span><b>${t.tp} $${t.price} (1:${t.rr})</b> [${t.source}] ${'★'.repeat(t.confidence)}${'☆'.repeat(3-t.confidence)} — ${t.description}</span></div>`).join("") : '<div class="reason-item"><div class="reason-dot"></div><span>ATR-based TP (no nearby structure found)</span></div>' }
+    </div>
+    <div class="reasons" style="margin-top:6px">
+      <div class="reasons-title">Confluence (${confluence.length} factors)</div>
+      ${confluence.slice(0,5).map(r => `<div class="reason-item"><div class="reason-dot"></div><span>${r}</span></div>`).join("")}
+    </div>
+  </div>`;
+}
+
+// ── Analysis ──────────────────────────────────────────────────────────────────
+function renderAnalysis(analysis, tf) {
+  const d  = (analysis.timeframes||{})[tf];
+  const el = document.getElementById("analysis-content");
+  if (!d) { el.innerHTML = '<div class="no-sig">No data for this timeframe</div>'; return; }
+  const ind = d.indicators || {};
+  const rsi = ind.rsi || 50;
+  const rsiColor = rsi > 70 ? "var(--bear)" : rsi < 30 ? "var(--bull)" : "var(--info)";
+  const macdColor = (ind.macd_hist||0) > 0 ? "var(--bull)" : "var(--bear)";
+  const trendCls  = (d.trend||"").includes("bull") ? "bull-v" : (d.trend||"").includes("bear") ? "bear-v" : "neut-v";
+  const pdCls     = d.premium_discount === "discount" ? "bull-v" : d.premium_discount === "premium" ? "bear-v" : "gold-v";
+
+  el.innerHTML = `
+  <div class="card">
+    <div class="card-title">Structure</div>
+    <div class="info-row"><span class="info-label">Trend</span><span class="info-val ${trendCls}">${(d.trend||"—").replace(/_/g," ")}</span></div>
+    <div class="info-row"><span class="info-label">Bias</span><span class="info-val ${trendCls}">${(d.bias||"—").replace(/_/g," ")}</span></div>
+    <div class="info-row"><span class="info-label">Momentum</span><span class="info-val ${d.momentum==="bullish"?"bull-v":d.momentum==="bearish"?"bear-v":"neut-v"}">${d.momentum||"—"}</span></div>
+    <div class="info-row"><span class="info-label">Zone</span><span class="info-val ${pdCls}">${(d.premium_discount||"—").toUpperCase()} (${d.pd_position_pct||0}%)</span></div>
+    <div class="info-row"><span class="info-label">ATR (14)</span><span class="info-val gold-v">$${(d.atr||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">Confluence</span><span class="info-val gold-v">${(d.confluence_score||0).toFixed(1)} / 10</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Momentum Indicators</div>
+    <div class="info-row"><span class="info-label">RSI (14)</span><span class="info-val" style="color:${rsiColor}">${rsi.toFixed(1)} ${rsi>70?"▲ OB":rsi<30?"▲ OS":""}</span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:${rsi}%;background:${rsiColor}"></div></div>
+    <div class="info-row" style="margin-top:8px"><span class="info-label">MACD Hist</span><span class="info-val" style="color:${macdColor}">${(ind.macd_hist||0).toFixed(3)}</span></div>
+    <div class="info-row"><span class="info-label">Stoch %K</span><span class="info-val" style="color:${(ind.stoch_k||50)>80?"var(--bear)":(ind.stoch_k||50)<20?"var(--bull)":"var(--text2)"}">${(ind.stoch_k||0).toFixed(1)}</span></div>
+    <div class="info-row"><span class="info-label">Williams %R</span><span class="info-val" style="color:${(ind.williams_r||0)>-20?"var(--bear)":(ind.williams_r||0)<-80?"var(--bull)":"var(--text2)"}">${(ind.williams_r||0).toFixed(1)}</span></div>
+    <div class="info-row"><span class="info-label">Volume ratio</span><span class="info-val ${(ind.volume_ratio||1)>=1.25?"bull-v":"neut-v"}">${(ind.volume_ratio||1).toFixed(2)}x</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">EMA Stack</div>
+    <div class="info-row"><span class="info-label">EMA 8</span><span class="info-val gold-v">$${(ind.ema8||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">EMA 21</span><span class="info-val gold-v">$${(ind.ema21||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">EMA 50</span><span class="info-val neut-v">$${(ind.ema50||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">EMA 200</span><span class="info-val neut-v">$${(ind.ema200||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">BB Upper</span><span class="info-val bear-v">$${(ind.bb_upper||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">BB Mid</span><span class="info-val neut-v">$${(ind.bb_mid||0).toFixed(2)}</span></div>
+    <div class="info-row"><span class="info-label">BB Lower</span><span class="info-val bull-v">$${(ind.bb_lower||0).toFixed(2)}</span></div>
+  </div>`;
+}
+
+// ── SMC ───────────────────────────────────────────────────────────────────────
+function renderSMC(analysis, tf) {
+  const d   = (analysis.timeframes||{})[tf];
+  const el  = document.getElementById("smc-content");
+  if (!d) { el.innerHTML = '<div class="no-sig">No SMC data</div>'; return; }
+  const smc    = d.smc || {};
+  const obs    = smc.order_blocks || [];
+  const fvgs   = smc.fvgs || [];
+  const liq    = smc.liquidity_zones || [];
+  const sweeps = smc.sweeps || [];
+  const struct = smc.structure_events || [];
+
+  const mkSection = (title, items, mapFn, emptyMsg) => `
+    <div class="card">
+      <div class="card-title">${title} <span style="color:var(--text3);font-weight:400">${items.length}</span></div>
+      ${items.length ? items.map(mapFn).join("") : `<div style="color:var(--text3);font-size:12px">${emptyMsg}</div>`}
+    </div>`;
+
+  el.innerHTML =
+    mkSection("Order Blocks", obs, o => `<div class="smc-item ${o.type.includes("bull")?"bull-item":"bear-item"}"><span class="smc-lbl">${o.label}</span><span class="smc-val">${o.type.includes("bull")?"DEMAND":"SUPPLY"}</span></div>`, "No unmitigated OBs") +
+    mkSection("Fair Value Gaps", fvgs, f => `<div class="smc-item ${f.type.includes("bull")?"bull-item":"bear-item"}"><span class="smc-lbl">${f.label}</span><span class="smc-val">${f.size}pt</span></div>`, "No unfilled FVGs") +
+    mkSection("Liquidity Sweeps", sweeps, s => `<div class="smc-item sweep-item"><span class="smc-lbl">${s.label}</span><span class="smc-val">$${s.level}</span></div>`, "No recent sweeps") +
+    mkSection("Liquidity Zones", liq, z => `<div class="smc-item ${z.type.includes("buy")?"bear-item":"bull-item"}"><span class="smc-lbl">${z.label}</span><span class="smc-val">${z.side.toUpperCase()}</span></div>`, "No zones") +
+    mkSection("BOS / CHoCH", struct, e => `<div class="smc-item ${e.direction.includes("bull")?"bull-item":"bear-item"}"><span class="smc-lbl">${e.desc}</span><span class="smc-val">${e.type}</span></div>`, "No events");
+}
+
+// ── Settings + News ───────────────────────────────────────────────────────────
+function renderSettings(data) {
+  const mt5 = data.mt5_info || {};
+  const src = data.data_source || "—";
+  const setSafe = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setSafe("set-mt5",     mt5.connected ? "🟢 Connected" : "🔴 Not connected");
+  setSafe("set-broker",  mt5.broker    || "—");
+  setSafe("set-spread",  mt5.spread    ? mt5.spread + " pts" : "—");
+  setSafe("set-bidask",  (mt5.bid && mt5.ask) ? "$" + mt5.bid + " / $" + mt5.ask : "—");
+  const srcEl = document.getElementById("s-source");
+  if (srcEl) srcEl.style.color = src === "MT5" ? "var(--bull)" : src === "Yahoo" ? "var(--warn)" : "var(--bear)";
+}
+
+function renderNews(news, summary) {
+  const el = document.getElementById("m-news");
+  if (!el) return;
+  if (!news.length) { el.innerHTML = '<div style="color:var(--text3);font-size:12px">No high-impact events</div>'; return; }
+  el.innerHTML = (summary.news_blocked ? `<div class="warn-box">🛑 ${summary.news_reason}</div>` : "") +
+    news.map(n => `<div class="news-row"><span class="news-imp ${n.impact==="HIGH"?"imp-high":"imp-med"}">${n.impact}</span><span class="news-txt">${n.event}</span><span class="news-time">${n.time||n.date}</span></div>`).join("");
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+function checkNotify(data) {
+  if (!notifEnabled) return;
+  const sigs = (data.signals || {}).signals || [];
+  const best = sigs.find(s => ["sniper","high"].includes(s.setup_type));
+  if (!best) return;
+  if (Notification.permission === "granted") {
+    new Notification("⚡ " + best.setup_type.toUpperCase() + " — " + best.direction + " XAUUSD " + best.timeframe.toUpperCase(), {
+      body: "Entry: $" + best.entry + "  SL: $" + best.sl + "  TP1: $" + best.tp1 + "\nRR: 1:" + best.rr1 + "  Score: " + best.score + "/10",
+      icon: "/static/icon192.png",
+      badge: "/static/icon192.png",
+      tag: "xau-signal",
+      renotify: true
+    });
+  }
+}
+
+document.getElementById("notif-btn").addEventListener("click", () => {
+  if (!("Notification" in window)) { toast("Notifications not supported on this browser"); return; }
+  Notification.requestPermission().then(perm => {
+    if (perm === "granted") {
+      notifEnabled = true;
+      const btn = document.getElementById("notif-btn");
+      btn.textContent = "✅ Notifications Enabled";
+      btn.classList.add("enabled");
+      toast("Notifications enabled! You will be alerted on SNIPER/HIGH signals.");
+    } else {
+      toast("Permission denied. Enable in browser settings.");
+    }
+  });
+});
+
+// ── Copy URL ──────────────────────────────────────────────────────────────────
+function copyURL() {
+  const url = window.location.href.split("?")[0];
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast("URL copied to clipboard!"));
+  } else {
+    const el = document.createElement("textarea");
+    el.value = url; document.body.appendChild(el); el.select();
+    document.execCommand("copy"); document.body.removeChild(el);
+    toast("URL copied!");
+  }
+}
+document.getElementById("copy-url-btn").addEventListener("click", copyURL);
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, dur=3000) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), dur);
+}
+
+// ── FAB ───────────────────────────────────────────────────────────────────────
+document.getElementById("fab").addEventListener("click", refresh);
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+function startCountdown() {
+  clearInterval(cdTimer);
+  countdown = 60;
+  cdTimer = setInterval(() => {
+    countdown--;
+    const el = document.getElementById("m-countdown");
+    if (el) el.textContent = countdown + "s";
+    if (countdown <= 0) { countdown = 60; autoFetch(); }
+  }, 1000);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+refresh();
+startCountdown();
+</script>
+</body>
+</html>

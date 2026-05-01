@@ -1,0 +1,36 @@
+name: XAUUSD Signal System CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+    - name: Run pipeline test
+      run: |
+        python -c "
+        from core.market_data import MarketDataFetcher
+        from core.analyzer import TradingAnalyzer
+        from core.signal_engine import SignalEngine
+        f = MarketDataFetcher()
+        data = f.get_all_timeframes()
+        assert data['current_price'] > 0
+        a = TradingAnalyzer()
+        analysis = a.full_analysis(data)
+        assert 'timeframes' in analysis
+        e = SignalEngine()
+        signals = e.generate_signals(analysis, data)
+        assert 'signals' in signals
+        print('All tests passed')
+        "
