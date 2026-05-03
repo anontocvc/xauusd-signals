@@ -34,7 +34,7 @@ from core.signal_engine  import SignalEngine
 from core.telegram_alerts import (
     check_and_send_alerts,
     test_telegram,
-    _send_message
+    _send
 )
 
 
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         # Try to send error alert
         try:
             from core.telegram_alerts import _send
-            _send_message(f"⚠️ <b>Signal check error</b>\n\n<code>{str(e)[:200]}</code>")
+           _send(f"⚠️ <b>Signal check error</b>\n\n<code>{str(e)[:200]}</code>")
         except Exception:
             pass
         sys.exit(1)
