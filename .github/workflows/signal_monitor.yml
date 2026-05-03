@@ -1,0 +1,47 @@
+name: XAUUSD Signal Monitor
+
+# WHY 5 MINUTES AND NOT 1 MINUTE:
+# GitHub Actions hard limit = 5 min minimum for cron schedules.
+# Even at */5, GitHub often delays 2-10 extra minutes on free tier.
+# For true 1-minute alerts, deploy to Railway/Render instead —
+# the app.py background thread runs every 60 seconds 24/7 for free.
+
+on:
+  schedule:
+    # Every 5 minutes during London session (08:00-12:00 UTC), Mon-Fri
+    - cron: '*/5 8-12 * * 1-5'
+    # Every 5 minutes during NY session (13:00-17:00 UTC), Mon-Fri
+    - cron: '*/5 13-17 * * 1-5'
+  workflow_dispatch:  # Manual trigger button in GitHub UI
+
+jobs:
+  check-signals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install flask requests pandas numpy
+
+      - name: Run signal check + send Telegram
+        env:
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python github_signal_check.py
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: signal-log-${{ github.run_number }}
+          path: signal_log.txt
+          retention-days: 3

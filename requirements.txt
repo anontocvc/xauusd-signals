@@ -1,0 +1,14 @@
+# Core server — works on cloud (Railway, Render, Replit)
+flask==3.0.3
+requests==2.32.3
+pandas==2.2.2
+numpy==1.26.4
+
+# Telegram alerts (already in requests, no extra install needed)
+
+# Optional: real QR code images
+# qrcode[pil]==7.4.2
+
+# MT5 is Windows-only — do NOT include for cloud deployment
+# Install manually on your local Windows laptop only:
+# pip install MetaTrader5
