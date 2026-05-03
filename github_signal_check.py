@@ -126,7 +126,7 @@ if __name__ == "__main__":
         logger.error(f"Fatal error: {e}", exc_info=True)
         # Try to send error alert
         try:
-            from core.telegram_alerts import _send_message
+            from core.telegram_alerts import _send
             _send_message(f"⚠️ <b>Signal check error</b>\n\n<code>{str(e)[:200]}</code>")
         except Exception:
             pass
